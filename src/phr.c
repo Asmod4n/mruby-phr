@@ -307,7 +307,7 @@ mrb_phr_reset(mrb_state *mrb, mrb_value self)
 }
 
 void
-mrb_phr_gem_init(mrb_state* mrb) {
+mrb_mruby_phr_gem_init(mrb_state* mrb) {
   struct RClass *phr_class, *phr_chunked_decoder_class;
 
   phr_class = mrb_define_class(mrb, "Phr", mrb->object_class);
@@ -333,6 +333,6 @@ mrb_phr_gem_init(mrb_state* mrb) {
 }
 
 void
-mrb_phr_gem_final(mrb_state* mrb) {
+mrb_mruby_phr_gem_final(mrb_state* mrb) {
   /* finalizer */
 }
