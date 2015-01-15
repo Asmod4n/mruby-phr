@@ -152,9 +152,7 @@ mrb_phr_parse_response(mrb_state *mrb, mrb_value self)
 {
   char *response;
   mrb_int response_len;
-  int pret;
-  int minor_version;
-  int status;
+  int pret, minor_version, status;
   const char *msg;
   size_t msg_len;
   size_t num_headers = PHR_MAX_HEADERS;
@@ -242,14 +240,12 @@ mrb_phr_decode_chunked(mrb_state *mrb, mrb_value self)
 
   else
   if (pret == -2) {
-    mrb_str_resize(mrb, buf, rsize);
-    mrb_yield(mrb, block, buf);
+    mrb_yield(mrb, block, mrb_str_resize(mrb, buf, rsize));
 
     return mrb_symbol_value(mrb_intern_lit(mrb, "incomplete"));
   }
   else {
-    mrb_str_resize(mrb, buf, rsize);
-    mrb_yield(mrb, block, buf);
+    mrb_yield(mrb, block, mrb_str_resize(mrb, buf, rsize));
 
     return mrb_fixnum_value(pret);
   }
