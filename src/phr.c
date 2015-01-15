@@ -29,10 +29,6 @@ phr_chunked_decoder_init(mrb_state *mrb, mrb_value self)
 
   mrb_data_init(self, decoder, &phr_chunked_decoder_type);
 
-  mrb_iv_set(mrb, self,
-    mrb_intern_lit(mrb, "size"),
-    mrb_fixnum_value(0));
-
   return self;
 }
 
@@ -108,10 +104,9 @@ mrb_phr_headers_to_a(mrb_state *mrb, struct phr_header *headers, size_t num_head
 static mrb_value
 mrb_phr_parse_request(mrb_state *mrb, mrb_value self)
 {
-  mrb_int i;
   char *request;
   mrb_int request_len;
-  int ret;
+  int pret;
   const char *method;
   size_t method_len;
   const char *path;
@@ -122,17 +117,17 @@ mrb_phr_parse_request(mrb_state *mrb, mrb_value self)
   mrb_int last_len = mrb_int(mrb, mrb_iv_get(mrb, self,
     mrb_intern_lit(mrb, "last_len")));
 
-  i = mrb_get_args(mrb, "s", &request, &request_len);
+  mrb_get_args(mrb, "s", &request, &request_len);
 
-  ret = phr_parse_request(request, request_len,
+  pret = phr_parse_request(request, request_len,
       &method, &method_len, &path, &path_len, &minor_version, headers,
       &num_headers, last_len);
 
-  if (ret == -1)
+  if (pret == -1)
     return mrb_symbol_value(mrb_intern_lit(mrb, "parser_error"));
 
   else
-  if (ret == -2) {
+  if (pret == -2) {
     mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "last_len"),
       mrb_fixnum_value(request_len));
 
@@ -155,10 +150,9 @@ mrb_phr_parse_request(mrb_state *mrb, mrb_value self)
 static mrb_value
 mrb_phr_parse_response(mrb_state *mrb, mrb_value self)
 {
-  mrb_int i;
   char *response;
   mrb_int response_len;
-  int ret;
+  int pret;
   int minor_version;
   int status;
   const char *msg;
@@ -168,17 +162,17 @@ mrb_phr_parse_response(mrb_state *mrb, mrb_value self)
   mrb_int last_len = mrb_int(mrb, mrb_iv_get(mrb, self,
     mrb_intern_lit(mrb, "last_len")));
 
-  i = mrb_get_args(mrb, "s", &response, &response_len);
+  mrb_get_args(mrb, "s", &response, &response_len);
 
-  ret = phr_parse_response(response, response_len,
+  pret = phr_parse_response(response, response_len,
       &minor_version, &status, &msg, &msg_len, headers,
       &num_headers, last_len);
 
-  if (ret == -1)
+  if (pret == -1)
     return mrb_symbol_value(mrb_intern_lit(mrb, "parser_error"));
 
   else
-  if (ret == -2) {
+  if (pret == -2) {
     mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "last_len"),
       mrb_fixnum_value(response_len));
 
@@ -201,23 +195,22 @@ mrb_phr_parse_response(mrb_state *mrb, mrb_value self)
 static mrb_value
 mrb_phr_parse_headers(mrb_state *mrb, mrb_value self)
 {
-  mrb_int i;
   char *buf;
   mrb_int buf_len;
-  int ret;
+  int pret;
   size_t num_headers = PHR_MAX_HEADERS;
   struct phr_header headers[num_headers];
   mrb_int last_len = mrb_int(mrb, mrb_iv_get(mrb, self,
     mrb_intern_lit(mrb, "last_len")));
 
-  i = mrb_get_args(mrb, "s", &buf, &buf_len);
-  ret = phr_parse_headers(buf, buf_len, headers, &num_headers, last_len);
+  mrb_get_args(mrb, "s", &buf, &buf_len);
+  pret = phr_parse_headers(buf, buf_len, headers, &num_headers, last_len);
 
-  if (ret == -1)
+  if (pret == -1)
     return mrb_symbol_value(mrb_intern_lit(mrb, "parser_error"));
 
   else
-  if (ret == -2) {
+  if (pret == -2) {
     mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "last_len"),
       mrb_fixnum_value(buf_len));
 
@@ -233,36 +226,31 @@ mrb_phr_parse_headers(mrb_state *mrb, mrb_value self)
 static mrb_value
 mrb_phr_decode_chunked(mrb_state *mrb, mrb_value self)
 {
-  mrb_int i;
-  mrb_value buf;
+  mrb_value buf, block;
   mrb_int rsize;
-  int ret;
+  int pret;
   phr_chunked_decoder_t *decoder;
   decoder = (phr_chunked_decoder_t *) DATA_PTR(self);
-  mrb_int size = mrb_int(mrb, mrb_iv_get(mrb, self,
-    mrb_intern_lit(mrb, "size")));
 
-  i = mrb_get_args(mrb, "S", &buf);
-  rsize = RSTRING_LEN(buf) - size;
-  ret = phr_decode_chunked(decoder, RSTRING_PTR(buf) + size,
-    (size_t *)&rsize);
+  mrb_get_args(mrb, "S&", &buf, &block);
+  rsize = RSTRING_LEN(buf);
+  mrb_str_modify(mrb, mrb_str_ptr(buf));
+  pret = phr_decode_chunked(decoder, RSTRING_PTR(buf), (size_t *)&rsize);
 
-  if(ret == -1)
+  if(pret == -1)
     return mrb_symbol_value(mrb_intern_lit(mrb, "parser_error"));
 
   else
-  if (ret == -2) {
-    size += rsize;
-    mrb_str_resize(mrb, buf, size);
-    mrb_iv_set(mrb, self,
-      mrb_intern_lit(mrb, "size"),
-      mrb_fixnum_value(size));
+  if (pret == -2) {
+    mrb_str_resize(mrb, buf, rsize);
+    mrb_yield(mrb, block, buf);
 
     return mrb_symbol_value(mrb_intern_lit(mrb, "incomplete"));
   }
   else {
-    size += rsize;
-    mrb_str_resize(mrb, buf, size + ret);
+    mrb_str_resize(mrb, buf, rsize);
+    mrb_yield(mrb, block, buf);
+
     return mrb_fixnum_value(ret);
   }
 }
@@ -327,7 +315,7 @@ mrb_mruby_phr_gem_init(mrb_state* mrb) {
   phr_chunked_decoder_class = mrb_define_class_under(mrb, phr_class, "ChunkedDecoder", mrb->object_class);
   MRB_SET_INSTANCE_TT(phr_chunked_decoder_class, MRB_TT_DATA);
   mrb_define_method(mrb, phr_chunked_decoder_class, "initialize",       phr_chunked_decoder_init, MRB_ARGS_NONE());
-  mrb_define_method(mrb, phr_chunked_decoder_class, "decode_chunked",   mrb_phr_decode_chunked,   MRB_ARGS_REQ(1));
+  mrb_define_method(mrb, phr_chunked_decoder_class, "decode_chunked",   mrb_phr_decode_chunked,   MRB_ARGS_REQ(2));
   mrb_define_method(mrb, phr_chunked_decoder_class, "consume_trailer",  mrb_consume_trailer,      MRB_ARGS_REQ(1));
   mrb_define_method(mrb, phr_chunked_decoder_class, "reset",            phr_chunked_decoder_init, MRB_ARGS_NONE());
 }
