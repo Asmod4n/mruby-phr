@@ -143,7 +143,7 @@ mrb_phr_parse_request(mrb_state *mrb, mrb_value self)
     mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "headers"),
       mrb_phr_headers_to_a(mrb, headers, num_headers));
 
-    return mrb_fixnum_value(ret);
+    return mrb_fixnum_value(pret);
   }
 }
 
@@ -188,7 +188,7 @@ mrb_phr_parse_response(mrb_state *mrb, mrb_value self)
     mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "headers"),
       mrb_phr_headers_to_a(mrb, headers, num_headers));
 
-    return mrb_fixnum_value(ret);
+    return mrb_fixnum_value(pret);
   }
 }
 
@@ -219,7 +219,7 @@ mrb_phr_parse_headers(mrb_state *mrb, mrb_value self)
     mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "headers"),
       mrb_phr_headers_to_a(mrb, headers, num_headers));
 
-    return mrb_fixnum_value(ret);
+    return mrb_fixnum_value(pret);
   }
 }
 
@@ -251,7 +251,7 @@ mrb_phr_decode_chunked(mrb_state *mrb, mrb_value self)
     mrb_str_resize(mrb, buf, rsize);
     mrb_yield(mrb, block, buf);
 
-    return mrb_fixnum_value(ret);
+    return mrb_fixnum_value(pret);
   }
 }
 
