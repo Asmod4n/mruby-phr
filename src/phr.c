@@ -91,8 +91,9 @@ mrb_phr_headers_to_a(mrb_state *mrb, struct phr_header *headers, size_t num_head
   mrb_int i;
   for(i=0;i != num_headers;i++) {
     mrb_value tmp = mrb_ary_new_capa(mrb, 2);
-    mrb_ary_set(mrb, tmp, 0,
-        mrb_str_new_static(mrb, headers[i].name, headers[i].name_len));
+    mrb_value key = mrb_str_new_static(mrb, headers[i].name, headers[i].name_len);
+    mrb_funcall(mrb, key, "downcase!", 0, NULL);
+    mrb_ary_set(mrb, tmp, 0, key);
     mrb_ary_set(mrb, tmp, 1,
         mrb_str_new_static(mrb, headers[i].value, headers[i].value_len));
     mrb_ary_set(mrb, headers_array, i, tmp);
