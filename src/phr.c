@@ -25,7 +25,7 @@ phr_chunked_decoder_init(mrb_state *mrb, mrb_value self)
 
   mrb_data_init(self, NULL, &phr_chunked_decoder_type);
   decoder = (phr_chunked_decoder_t *) mrb_calloc(mrb, 1,
-    sizeof(*decoder));
+    sizeof(phr_chunked_decoder_t));
 
   mrb_data_init(self, decoder, &phr_chunked_decoder_type);
 
