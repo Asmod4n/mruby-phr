@@ -226,22 +226,22 @@ static mrb_value
 mrb_phr_decode_chunked(mrb_state *mrb, mrb_value self)
 {
   mrb_value buf, block;
-  mrb_int rsize;
+  size_t rsize;
   int pret;
   phr_chunked_decoder_t *decoder;
   decoder = (phr_chunked_decoder_t *) DATA_PTR(self);
 
   mrb_get_args(mrb, "S&", &buf, &block);
-  rsize = RSTRING_LEN(buf);
-  mrb_str_modify(mrb, mrb_str_ptr(buf));
-  pret = phr_decode_chunked(decoder, RSTRING_PTR(buf), (size_t *)&rsize);
+  rsize = (size_t) RSTRING_LEN(buf);
+  mrb_str_modify(mrb, RSTRING(buf));
+  pret = phr_decode_chunked(decoder, RSTRING_PTR(buf), &rsize);
 
   if(pret == -1)
     return mrb_symbol_value(mrb_intern_lit(mrb, "parser_error"));
 
   else
   if (pret == -2) {
-    mrb_yield(mrb, block, mrb_str_resize(mrb, buf, rsize));
+    mrb_yield(mrb, block, mrb_str_resize(mrb, buf, (mrb_int) rsize));
 
     return mrb_symbol_value(mrb_intern_lit(mrb, "incomplete"));
   }
