@@ -87,12 +87,12 @@ mrb_phr_headers(mrb_state *mrb, mrb_value self)
 static inline mrb_value
 mrb_phr_headers_to_a(mrb_state *mrb, struct phr_header *headers, size_t num_headers)
 {
-  mrb_value headers_array = mrb_ary_new_capa(mrb, (mrb_int)num_headers);
+  mrb_value headers_array = mrb_ary_new_capa(mrb, (mrb_int) num_headers);
   mrb_int i;
-  for(i=0;i != num_headers;i++) {
+  for(i=0;i != (mrb_int) num_headers;i++) {
     mrb_value tmp = mrb_ary_new_capa(mrb, 2);
     mrb_value key = mrb_str_new_static(mrb, headers[i].name, headers[i].name_len);
-    mrb_funcall(mrb, key, "downcase!", 0, NULL);
+    mrb_funcall(mrb, key, "downcase!", 0);
     mrb_ary_set(mrb, tmp, 0, key);
     mrb_ary_set(mrb, tmp, 1,
         mrb_str_new_static(mrb, headers[i].value, headers[i].value_len));
@@ -120,9 +120,9 @@ mrb_phr_parse_request(mrb_state *mrb, mrb_value self)
 
   mrb_get_args(mrb, "s", &request, &request_len);
 
-  pret = phr_parse_request(request, request_len,
+  pret = phr_parse_request(request, (size_t) request_len,
       &method, &method_len, &path, &path_len, &minor_version, headers,
-      &num_headers, last_len);
+      &num_headers, (size_t) last_len);
 
   if (pret == -1)
     return mrb_symbol_value(mrb_intern_lit(mrb, "parser_error"));
@@ -144,7 +144,7 @@ mrb_phr_parse_request(mrb_state *mrb, mrb_value self)
     mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "headers"),
       mrb_phr_headers_to_a(mrb, headers, num_headers));
 
-    return mrb_fixnum_value(pret);
+    return mrb_fixnum_value((mrb_int) pret);
   }
 }
 
@@ -163,9 +163,9 @@ mrb_phr_parse_response(mrb_state *mrb, mrb_value self)
 
   mrb_get_args(mrb, "s", &response, &response_len);
 
-  pret = phr_parse_response(response, response_len,
+  pret = phr_parse_response(response, (size_t) response_len,
       &minor_version, &status, &msg, &msg_len, headers,
-      &num_headers, last_len);
+      &num_headers, (size_t) last_len);
 
   if (pret == -1)
     return mrb_symbol_value(mrb_intern_lit(mrb, "parser_error"));
@@ -187,7 +187,7 @@ mrb_phr_parse_response(mrb_state *mrb, mrb_value self)
     mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "headers"),
       mrb_phr_headers_to_a(mrb, headers, num_headers));
 
-    return mrb_fixnum_value(pret);
+    return mrb_fixnum_value((mrb_int) pret);
   }
 }
 
@@ -203,7 +203,8 @@ mrb_phr_parse_headers(mrb_state *mrb, mrb_value self)
     mrb_intern_lit(mrb, "last_len")));
 
   mrb_get_args(mrb, "s", &buf, &buf_len);
-  pret = phr_parse_headers(buf, buf_len, headers, &num_headers, last_len);
+  pret = phr_parse_headers(buf, (size_t) buf_len, headers, &num_headers,
+    (size_t) last_len);
 
   if (pret == -1)
     return mrb_symbol_value(mrb_intern_lit(mrb, "parser_error"));
@@ -218,7 +219,7 @@ mrb_phr_parse_headers(mrb_state *mrb, mrb_value self)
     mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "headers"),
       mrb_phr_headers_to_a(mrb, headers, num_headers));
 
-    return mrb_fixnum_value(pret);
+    return mrb_fixnum_value((mrb_int) pret);
   }
 }
 
@@ -246,9 +247,9 @@ mrb_phr_decode_chunked(mrb_state *mrb, mrb_value self)
     return mrb_symbol_value(mrb_intern_lit(mrb, "incomplete"));
   }
   else {
-    mrb_yield(mrb, block, mrb_str_resize(mrb, buf, rsize));
+    mrb_yield(mrb, block, mrb_str_resize(mrb, buf, (mrb_int) rsize));
 
-    return mrb_fixnum_value(pret);
+    return mrb_fixnum_value((mrb_int) pret);
   }
 }
 
