@@ -1,5 +1,6 @@
 ﻿#include "picohttpparser.h"
 #include <ctype.h>
+#include <string.h>
 #include <mruby.h>
 #include <mruby/data.h>
 #include <mruby/variable.h>
@@ -7,7 +8,7 @@
 #include <mruby/string.h>
 #include <mruby/class.h>
 
-#define PHR_MAX_HEADERS 255
+#define PHR_MAX_HEADERS 255U
 
 typedef struct phr_chunked_decoder phr_chunked_decoder_t;
 
@@ -18,17 +19,18 @@ static const struct mrb_data_type phr_chunked_decoder_type = {
 static mrb_value
 phr_chunked_decoder_init(mrb_state *mrb, mrb_value self)
 {
-  phr_chunked_decoder_t *decoder;
+  mrb_data_init(self, mrb_calloc(mrb, 1,
+    sizeof(phr_chunked_decoder_t)), &phr_chunked_decoder_type);
 
-  decoder = (phr_chunked_decoder_t *) DATA_PTR(self);
-  if(decoder)
-    mrb_free(mrb, decoder);
+  return self;
+}
 
-  mrb_data_init(self, NULL, &phr_chunked_decoder_type);
-  decoder = (phr_chunked_decoder_t *) mrb_calloc(mrb, 1,
-    sizeof(phr_chunked_decoder_t));
+static mrb_value
+phr_chunked_decoder_reset(mrb_state *mrb, mrb_value self)
+{
+  phr_chunked_decoder_t *decoder = (phr_chunked_decoder_t *) DATA_PTR(self);
 
-  mrb_data_init(self, decoder, &phr_chunked_decoder_type);
+  memset(decoder, 0, sizeof(phr_chunked_decoder_t));
 
   return self;
 }
@@ -328,11 +330,11 @@ mrb_mruby_phr_gem_init(mrb_state* mrb) {
 
   phr_chunked_decoder_class = mrb_define_class_under(mrb, phr_class, "ChunkedDecoder", mrb->object_class);
   MRB_SET_INSTANCE_TT(phr_chunked_decoder_class, MRB_TT_DATA);
-  mrb_define_method(mrb, phr_chunked_decoder_class, "initialize",       phr_chunked_decoder_init, MRB_ARGS_NONE());
-  mrb_define_method(mrb, phr_chunked_decoder_class, "decode_chunked",   mrb_phr_decode_chunked,   MRB_ARGS_REQ(1));
-  mrb_define_method(mrb, phr_chunked_decoder_class, "consume_trailer?",  mrb_consume_trailer,      MRB_ARGS_NONE());
-  mrb_define_method(mrb, phr_chunked_decoder_class, "consume_trailer=", mrb_set_consume_trailer,  MRB_ARGS_REQ(1));
-  mrb_define_method(mrb, phr_chunked_decoder_class, "reset",            phr_chunked_decoder_init, MRB_ARGS_NONE());
+  mrb_define_method(mrb, phr_chunked_decoder_class, "initialize",       phr_chunked_decoder_init,   MRB_ARGS_NONE());
+  mrb_define_method(mrb, phr_chunked_decoder_class, "decode_chunked",   mrb_phr_decode_chunked,     MRB_ARGS_REQ(1));
+  mrb_define_method(mrb, phr_chunked_decoder_class, "consume_trailer?", mrb_consume_trailer,        MRB_ARGS_NONE());
+  mrb_define_method(mrb, phr_chunked_decoder_class, "consume_trailer=", mrb_set_consume_trailer,    MRB_ARGS_REQ(1));
+  mrb_define_method(mrb, phr_chunked_decoder_class, "reset",            phr_chunked_decoder_reset,  MRB_ARGS_NONE());
 }
 
 void
