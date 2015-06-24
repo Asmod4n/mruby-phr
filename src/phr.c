@@ -232,32 +232,28 @@ mrb_phr_parse_headers(mrb_state *mrb, mrb_value self)
 static mrb_value
 mrb_phr_decode_chunked(mrb_state *mrb, mrb_value self)
 {
-  mrb_value buf, block;
+  mrb_value buf;
   size_t rsize;
   int pret;
-  phr_chunked_decoder_t *decoder;
-  decoder = (phr_chunked_decoder_t *) DATA_PTR(self);
+  phr_chunked_decoder_t *decoder = (phr_chunked_decoder_t *) DATA_PTR(self);
 
-  mrb_get_args(mrb, "S&", &buf, &block);
-
-  if(mrb_nil_p(block))
-    mrb_raise(mrb, E_ARGUMENT_ERROR, "no block given");
+  mrb_get_args(mrb, "S", &buf);
 
   rsize = (size_t) RSTRING_LEN(buf);
   mrb_str_modify(mrb, RSTRING(buf));
   pret = phr_decode_chunked(decoder, RSTRING_PTR(buf), &rsize);
 
-  if(pret == -1)
+  if (pret == -1)
     return mrb_symbol_value(mrb_intern_lit(mrb, "parser_error"));
 
   else
   if (pret == -2) {
-    mrb_yield(mrb, block, mrb_str_resize(mrb, buf, (mrb_int) rsize));
+    mrb_str_resize(mrb, buf, (mrb_int) rsize);
 
     return mrb_symbol_value(mrb_intern_lit(mrb, "incomplete"));
   }
   else {
-    mrb_yield(mrb, block, mrb_str_resize(mrb, buf, (mrb_int) rsize));
+    mrb_str_resize(mrb, buf, (mrb_int) rsize);
 
     return mrb_fixnum_value((mrb_int) pret);
   }
@@ -323,7 +319,7 @@ mrb_mruby_phr_gem_init(mrb_state* mrb) {
   phr_chunked_decoder_class = mrb_define_class_under(mrb, phr_class, "ChunkedDecoder", mrb->object_class);
   MRB_SET_INSTANCE_TT(phr_chunked_decoder_class, MRB_TT_DATA);
   mrb_define_method(mrb, phr_chunked_decoder_class, "initialize",       phr_chunked_decoder_init, MRB_ARGS_NONE());
-  mrb_define_method(mrb, phr_chunked_decoder_class, "decode_chunked",   mrb_phr_decode_chunked,   (MRB_ARGS_REQ(1)|MRB_ARGS_BLOCK()));
+  mrb_define_method(mrb, phr_chunked_decoder_class, "decode_chunked",   mrb_phr_decode_chunked,   MRB_ARGS_REQ(1));
   mrb_define_method(mrb, phr_chunked_decoder_class, "consume_trailer",  mrb_consume_trailer,      MRB_ARGS_REQ(1));
   mrb_define_method(mrb, phr_chunked_decoder_class, "reset",            phr_chunked_decoder_init, MRB_ARGS_NONE());
 }
