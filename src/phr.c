@@ -262,11 +262,21 @@ mrb_phr_decode_chunked(mrb_state *mrb, mrb_value self)
 static mrb_value
 mrb_consume_trailer(mrb_state *mrb, mrb_value self)
 {
+  phr_chunked_decoder_t *decoder = (phr_chunked_decoder_t *) DATA_PTR(self);
+
+  if (decoder->consume_trailer)
+    return mrb_true_value();
+  else
+    return mrb_false_value();
+}
+
+static mrb_value
+mrb_set_consume_trailer(mrb_state *mrb, mrb_value self)
+{
   mrb_bool consume;
   mrb_get_args(mrb, "b", &consume);
 
-  phr_chunked_decoder_t *decoder;
-  decoder = (phr_chunked_decoder_t *) DATA_PTR(self);
+  phr_chunked_decoder_t *decoder = (phr_chunked_decoder_t *) DATA_PTR(self);
 
   if (consume)
     decoder->consume_trailer = 1;
@@ -320,7 +330,8 @@ mrb_mruby_phr_gem_init(mrb_state* mrb) {
   MRB_SET_INSTANCE_TT(phr_chunked_decoder_class, MRB_TT_DATA);
   mrb_define_method(mrb, phr_chunked_decoder_class, "initialize",       phr_chunked_decoder_init, MRB_ARGS_NONE());
   mrb_define_method(mrb, phr_chunked_decoder_class, "decode_chunked",   mrb_phr_decode_chunked,   MRB_ARGS_REQ(1));
-  mrb_define_method(mrb, phr_chunked_decoder_class, "consume_trailer",  mrb_consume_trailer,      MRB_ARGS_REQ(1));
+  mrb_define_method(mrb, phr_chunked_decoder_class, "consume_trailer?",  mrb_consume_trailer,      MRB_ARGS_NONE());
+  mrb_define_method(mrb, phr_chunked_decoder_class, "consume_trailer=", mrb_set_consume_trailer,  MRB_ARGS_REQ(1));
   mrb_define_method(mrb, phr_chunked_decoder_class, "reset",            phr_chunked_decoder_init, MRB_ARGS_NONE());
 }
 
