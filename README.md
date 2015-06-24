@@ -27,9 +27,8 @@ phr.reset
 
 buffer = "b\r\nhello world\r\n0\r\n"
 decoder = Phr::ChunkedDecoder.new
-decoder.decode_chunked(buffer) do |body|
-  puts body
-end
+decoder.decode_chunked(buffer)
+puts buffer
 decoder.reset
 ```
 
