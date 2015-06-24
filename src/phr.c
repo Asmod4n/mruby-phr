@@ -89,24 +89,20 @@ static inline mrb_value
 mrb_phr_headers_to_a(mrb_state *mrb, struct phr_header *headers, size_t num_headers)
 {
   mrb_value headers_array = mrb_ary_new_capa(mrb, (mrb_int) num_headers);
-  mrb_int i;
-  for(i=0;i != (mrb_int) num_headers;i++) {
-    mrb_value tmp = mrb_ary_new_capa(mrb, 2);
-    if(headers[i].name) {
-      char *p = (char *) headers[i].name;
-      char *pend = (char *) headers[i].name + headers[i].name_len;
-      while (p < pend) {
-        if (ISUPPER(*p)) {
+  struct phr_header *hend = headers + num_headers;
+  for(;headers < hend; headers++) {
+    if(headers->name) {
+      char *p = (char *) headers->name;
+      char *pend = (char *) p + headers->name_len;
+      for (;p < pend; p++) {
+        if (ISUPPER(*p))
           *p = TOLOWER(*p);
-        }
-        p++;
       }
     }
-    mrb_ary_set(mrb, tmp, 0, mrb_str_new_static(mrb, headers[i].name,
-      headers[i].name_len));
-    mrb_ary_set(mrb, tmp, 1, mrb_str_new_static(mrb, headers[i].value,
-      headers[i].value_len));
-    mrb_ary_set(mrb, headers_array, i, tmp);
+
+    mrb_ary_push(mrb, headers_array, mrb_assoc_new(mrb,
+      mrb_str_new_static(mrb, headers->name, headers->name_len),
+      mrb_str_new_static(mrb, headers->value, headers->value_len)));
   }
 
   return headers_array;
