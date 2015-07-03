@@ -26,11 +26,7 @@ puts body
 phr.reset
 
 buffer = "b\r\nhello world\r\n0\r\n"
-decoder = Phr::ChunkedDecoder.new
-decoder.decode_chunked(buffer)
+phr.decode_chunked(buffer)
 puts buffer
-decoder.reset
+phr.reset
 ```
-
-Please be aware: the buffer is being modified, meaning, headers will be downcase, and when the buffer goes out of Scope your App will crash because of a use after free error.
-Picohttpparser only holds references to the buffer it is passed and when that buffer gets garbage collected while the phr Object is still alive bad things happen.
