@@ -1,5 +1,5 @@
 # mruby-phr
-
+[![Build Status](https://travis-ci.org/Asmod4n/mruby-phr.svg)](https://travis-ci.org/Asmod4n/mruby-phr)
 Example
 =======
 ```ruby

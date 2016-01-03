@@ -1,0 +1,16 @@
+sudo: false
+addons:
+  apt:
+    packages:
+      - rake
+      - bison
+      - git
+language: c
+compiler:
+  - gcc
+  - clang
+script:
+  - rake test
+os:
+  - linux
+  - osx
