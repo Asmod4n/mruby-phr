@@ -15,15 +15,8 @@ mrb_phr_headers_to_a(mrb_state *mrb, mrb_value buff_obj, struct phr_header *head
 {
   mrb_value headers_array = mrb_ary_new_capa(mrb, num_headers);
   for (size_t curr_header = 0;curr_header < num_headers; curr_header++) {
-    if (headers[curr_header].name) {
-      char *name_pointer = (char *) headers[curr_header].name;
-      for (size_t name_pos = 0; name_pos < headers[curr_header].name_len; name_pos++) {
-        if (ISUPPER(name_pointer[name_pos])) {
-          name_pointer[name_pos] = TOLOWER(name_pointer[name_pos]);
-        }
-      }
-    }
     mrb_value header_name = mrb_str_substr(mrb, buff_obj, headers[curr_header].name - RSTRING_PTR(buff_obj), headers[curr_header].name_len);
+    mrb_funcall(mrb, header_name, "downcase!", 0);
     mrb_value header_value = mrb_str_substr(mrb, buff_obj, headers[curr_header].value - RSTRING_PTR(buff_obj), headers[curr_header].value_len);
     mrb_value name_value_pair = mrb_assoc_new(mrb, header_name, header_value);
 
@@ -195,12 +188,12 @@ mrb_set_consume_trailer(mrb_state *mrb, mrb_value self)
 static mrb_value
 mrb_phr_reset(mrb_state *mrb, mrb_value self)
 {
-  mrb_iv_remove(mrb, self, mrb_intern_lit(mrb, "method"));
-  mrb_iv_remove(mrb, self, mrb_intern_lit(mrb, "path"));
-  mrb_iv_remove(mrb, self, mrb_intern_lit(mrb, "minor_version"));
-  mrb_iv_remove(mrb, self, mrb_intern_lit(mrb, "status"));
-  mrb_iv_remove(mrb, self, mrb_intern_lit(mrb, "msg"));
-  mrb_iv_remove(mrb, self, mrb_intern_lit(mrb, "headers"));
+  mrb_iv_remove(mrb, self, mrb_intern_lit(mrb, "@method"));
+  mrb_iv_remove(mrb, self, mrb_intern_lit(mrb, "@path"));
+  mrb_iv_remove(mrb, self, mrb_intern_lit(mrb, "@minor_version"));
+  mrb_iv_remove(mrb, self, mrb_intern_lit(mrb, "@status"));
+  mrb_iv_remove(mrb, self, mrb_intern_lit(mrb, "@msg"));
+  mrb_iv_remove(mrb, self, mrb_intern_lit(mrb, "@headers"));
   mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "last_len"), mrb_fixnum_value(0));
   memset(DATA_PTR(self), 0, sizeof(phr_chunked_decoder_t));
 
