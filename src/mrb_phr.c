@@ -3,14 +3,13 @@
 static mrb_value
 mrb_phr_init(mrb_state *mrb, mrb_value self)
 {
-  phr_chunked_decoder_t *chunked_decoder = (phr_chunked_decoder_t *) mrb_calloc(mrb, 1, sizeof(phr_chunked_decoder_t));
-  mrb_data_init(self, chunked_decoder, &phr_chunked_decoder_type);
+  mrb_data_init(self, mrb_calloc(mrb, 1, sizeof(phr_chunked_decoder_t)), &phr_chunked_decoder_type);
   mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "last_len"), mrb_fixnum_value(0));
 
   return self;
 }
 
-static inline mrb_value
+MRB_INLINE mrb_value
 mrb_phr_headers_to_a(mrb_state *mrb, mrb_value buff_obj, struct phr_header *headers, size_t num_headers)
 {
   mrb_value headers_array = mrb_ary_new_capa(mrb, num_headers);
@@ -169,21 +168,13 @@ mrb_phr_decode_chunked(mrb_state *mrb, mrb_value self)
 static mrb_value
 mrb_consume_trailer(mrb_state *mrb, mrb_value self)
 {
-  if (((phr_chunked_decoder_t *) DATA_PTR(self))->consume_trailer) {
-    return mrb_true_value();
-  } else {
-    return mrb_false_value();
-  }
+  return mrb_bool_value(((phr_chunked_decoder_t *) DATA_PTR(self))->consume_trailer);
 }
 
 static mrb_value
 mrb_set_consume_trailer(mrb_state *mrb, mrb_value self)
 {
-  mrb_bool consume;
-
-  mrb_get_args(mrb, "b", &consume);
-
-  ((phr_chunked_decoder_t *) DATA_PTR(self))->consume_trailer = consume;
+  mrb_get_args(mrb, "b", &((phr_chunked_decoder_t *) DATA_PTR(self))->consume_trailer);
 
   return self;
 }
@@ -218,7 +209,4 @@ mrb_mruby_phr_gem_init(mrb_state* mrb)
   mrb_define_method(mrb, phr_class, "reset",            mrb_phr_reset,            MRB_ARGS_NONE());
 }
 
-void
-mrb_mruby_phr_gem_final(mrb_state* mrb)
-{
-}
+void mrb_mruby_phr_gem_final(mrb_state* mrb) {}

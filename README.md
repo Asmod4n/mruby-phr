@@ -1,4 +1,6 @@
 # mruby-phr
+A small http parser for mruby based on https://github.com/h2o/picohttpparser
+
 [![Build Status](https://travis-ci.org/Asmod4n/mruby-phr.svg)](https://travis-ci.org/Asmod4n/mruby-phr)
 Example
 =======
