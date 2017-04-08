@@ -15,8 +15,11 @@ mrb_phr_headers_to_a(mrb_state *mrb, mrb_value buff_obj, struct phr_header *head
   mrb_value headers_array = mrb_ary_new_capa(mrb, num_headers);
   int ai = mrb_gc_arena_save(mrb);
   for (size_t curr_header = 0; curr_header < num_headers; curr_header++) {
-    mrb_value header_name = mrb_str_substr(mrb, buff_obj, headers[curr_header].name - RSTRING_PTR(buff_obj), headers[curr_header].name_len);
-    mrb_funcall(mrb, header_name, "downcase!", 0);
+    mrb_value header_name = mrb_nil_value();
+    if (headers[curr_header].name) {
+      header_name = mrb_str_substr(mrb, buff_obj, headers[curr_header].name - RSTRING_PTR(buff_obj), headers[curr_header].name_len);
+      mrb_funcall(mrb, header_name, "downcase!", 0);
+    }
     mrb_value header_value = mrb_str_substr(mrb, buff_obj, headers[curr_header].value - RSTRING_PTR(buff_obj), headers[curr_header].value_len);
     mrb_value name_value_pair = mrb_assoc_new(mrb, header_name, header_value);
 
