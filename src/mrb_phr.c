@@ -1,4 +1,5 @@
 ﻿#include "mrb_phr.h"
+#include <ctype.h>
 
 #if (__GNUC__ >= 3) || (__INTEL_COMPILER >= 800) || defined(__clang__)
 # define likely(x) __builtin_expect(!!(x), 1)
@@ -27,7 +28,10 @@ mrb_phr_headers_to_a(mrb_state *mrb, mrb_value buff_obj, struct phr_header *head
   for (size_t curr_header = 0; curr_header < num_headers; curr_header++) {
     mrb_value header_name = mrb_nil_value();
     if (likely(headers[curr_header].name)) {
-      header_name = mrb_funcall(mrb, mrb_str_substr(mrb, buff_obj, headers[curr_header].name - RSTRING_PTR(buff_obj), headers[curr_header].name_len), "downcase!", 0);
+      header_name = mrb_str_substr(mrb, buff_obj, headers[curr_header].name - RSTRING_PTR(buff_obj), headers[curr_header].name_len);
+      for (size_t len = 0; len < RSTRING_LEN(header_name); len++) {
+        RSTRING_PTR(header_name)[len] = tolower(RSTRING_PTR(header_name)[len]);
+      }
     }
     mrb_value header_value = mrb_str_substr(mrb, buff_obj, headers[curr_header].value - RSTRING_PTR(buff_obj), headers[curr_header].value_len);
 
