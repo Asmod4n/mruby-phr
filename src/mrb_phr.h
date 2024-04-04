@@ -15,8 +15,13 @@
 
 typedef struct phr_chunked_decoder phr_chunked_decoder_t;
 
-static const struct mrb_data_type phr_chunked_decoder_type = {
-  "$i_phr_chunked_decoder", mrb_free
+typedef struct {
+  phr_chunked_decoder_t decoder;
+  size_t last_len;
+} mrb_phr_t;
+
+static const struct mrb_data_type mrb_phr_type = {
+  "$i_phr_t", mrb_free
 };
 
 #endif

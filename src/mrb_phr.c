@@ -1,5 +1,4 @@
 ﻿#include "mrb_phr.h"
-#include <ctype.h>
 
 #if (__GNUC__ >= 3) || (__INTEL_COMPILER >= 800) || defined(__clang__)
 # define likely(x) __builtin_expect(!!(x), 1)
@@ -12,10 +11,9 @@
 static mrb_value
 mrb_phr_init(mrb_state *mrb, mrb_value self)
 {
-  phr_chunked_decoder_t *decoder = mrb_realloc(mrb, DATA_PTR(self), sizeof(*decoder));
-  memset(decoder, 0, sizeof(*decoder));
-  mrb_data_init(self, decoder, &phr_chunked_decoder_type);
-  mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "last_len"), mrb_int_value(mrb, 0));
+  mrb_phr_t *mrb_phr = mrb_realloc(mrb, DATA_PTR(self), sizeof(*mrb_phr));
+  memset(mrb_phr, 0, sizeof(*mrb_phr));
+  mrb_data_init(self, mrb_phr, &mrb_phr_type);
 
   return self;
 }
@@ -29,9 +27,6 @@ mrb_phr_headers_to_a(mrb_state *mrb, mrb_value buff_obj, struct phr_header *head
     mrb_value header_name = mrb_nil_value();
     if (likely(headers[curr_header].name)) {
       header_name = mrb_str_substr(mrb, buff_obj, headers[curr_header].name - RSTRING_PTR(buff_obj), headers[curr_header].name_len);
-      for (size_t len = 0; len < RSTRING_LEN(header_name); len++) {
-        RSTRING_PTR(header_name)[len] = tolower(RSTRING_PTR(header_name)[len]);
-      }
     }
     mrb_value header_value = mrb_str_substr(mrb, buff_obj, headers[curr_header].value - RSTRING_PTR(buff_obj), headers[curr_header].value_len);
 
@@ -56,28 +51,29 @@ mrb_phr_parse_request(mrb_state *mrb, mrb_value self)
   int minor_version;
   struct phr_header headers[PHR_MAX_HEADERS];
   size_t num_headers = sizeof(headers) / sizeof(headers[0]);
-  mrb_int last_len = mrb_integer(mrb_iv_get(mrb, self,
-    mrb_intern_lit(mrb, "last_len")));
+  mrb_phr_t *mrb_phr = DATA_PTR(self);
+
 
   int pret = phr_parse_request(RSTRING_PTR(request_obj), RSTRING_LEN(request_obj),
       &method, &method_len, &path, &path_len, &minor_version, headers,
-      &num_headers, last_len);
+      &num_headers, mrb_phr->last_len);
 
-  if (pret == -1) {
-    return mrb_symbol_value(mrb_intern_lit(mrb, "parser_error"));
-  }
-  else if (pret == -2) {
-    mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "last_len"),
-      mrb_int_value(mrb, RSTRING_LEN(request_obj)));
+  switch(pret) {
+    case -1: {
+      return mrb_symbol_value(mrb_intern_lit(mrb, "parser_error"));
+    } break;
+    case -2: {
+      mrb_phr->last_len = RSTRING_LEN(request_obj);
+      return mrb_symbol_value(mrb_intern_lit(mrb, "incomplete"));
+    } break;
+    default: {
+      mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@method"), mrb_str_substr(mrb, request_obj, method - RSTRING_PTR(request_obj), method_len));
+      mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@path"), mrb_str_substr(mrb, request_obj, path - RSTRING_PTR(request_obj), path_len));
+      mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@minor_version"), mrb_fixnum_value(minor_version));
+      mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@headers"), mrb_phr_headers_to_a(mrb, request_obj, headers, num_headers));
 
-    return mrb_symbol_value(mrb_intern_lit(mrb, "incomplete"));
-  } else {
-    mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@method"), mrb_str_substr(mrb, request_obj, method - RSTRING_PTR(request_obj), method_len));
-    mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@path"), mrb_str_substr(mrb, request_obj, path - RSTRING_PTR(request_obj), path_len));
-    mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@minor_version"), mrb_int_value(mrb, minor_version));
-    mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@headers"), mrb_phr_headers_to_a(mrb, request_obj, headers, num_headers));
-
-    return mrb_int_value(mrb, pret);
+      return mrb_int_value(mrb, pret);
+    }
   }
 }
 
@@ -93,28 +89,28 @@ mrb_phr_parse_response(mrb_state *mrb, mrb_value self)
   size_t msg_len;
   struct phr_header headers[PHR_MAX_HEADERS];
   size_t num_headers = sizeof(headers) / sizeof(headers[0]);
-  mrb_int last_len = mrb_integer(mrb_iv_get(mrb, self,
-    mrb_intern_lit(mrb, "last_len")));
+  mrb_phr_t *mrb_phr = DATA_PTR(self);
 
   int pret = phr_parse_response(RSTRING_PTR(response_obj), RSTRING_LEN(response_obj),
       &minor_version, &status, &msg, &msg_len, headers,
-      &num_headers, last_len);
+      &num_headers, mrb_phr->last_len);
 
-  if (pret == -1) {
-    return mrb_symbol_value(mrb_intern_lit(mrb, "parser_error"));
-  }
-  else if (pret == -2) {
-    mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "last_len"),
-      mrb_int_value(mrb, RSTRING_LEN(response_obj)));
+  switch (pret) {
+    case -1: {
+      return mrb_symbol_value(mrb_intern_lit(mrb, "parser_error"));
+    } break;
+    case -2: {
+      mrb_phr->last_len = RSTRING_LEN(response_obj);
+      return mrb_symbol_value(mrb_intern_lit(mrb, "incomplete"));
+    } break;
+    default: {
+      mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@minor_version"), mrb_fixnum_value(minor_version));
+      mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@status"), mrb_fixnum_value(status));
+      mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@msg"), mrb_str_substr(mrb, response_obj, msg - RSTRING_PTR(response_obj), msg_len));
+      mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@headers"), mrb_phr_headers_to_a(mrb, response_obj, headers, num_headers));
 
-    return mrb_symbol_value(mrb_intern_lit(mrb, "incomplete"));
-  } else {
-    mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@minor_version"), mrb_int_value(mrb, minor_version));
-    mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@status"), mrb_int_value(mrb, status));
-    mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@msg"), mrb_str_substr(mrb, response_obj, msg - RSTRING_PTR(response_obj), msg_len));
-    mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@headers"), mrb_phr_headers_to_a(mrb, response_obj, headers, num_headers));
-
-    return mrb_int_value(mrb, pret);
+      return mrb_fixnum_value(pret);
+    }
   }
 }
 
@@ -127,24 +123,24 @@ mrb_phr_parse_headers(mrb_state *mrb, mrb_value self)
 
   struct phr_header headers[PHR_MAX_HEADERS];
   size_t num_headers = sizeof(headers) / sizeof(headers[0]);
-  mrb_int last_len = mrb_integer(mrb_iv_get(mrb, self,
-    mrb_intern_lit(mrb, "last_len")));
+  mrb_phr_t *mrb_phr = DATA_PTR(self);
 
   int pret = phr_parse_headers(RSTRING_PTR(headers_obj), RSTRING_LEN(headers_obj),
-    headers, &num_headers, last_len);
+    headers, &num_headers, mrb_phr->last_len);
 
-  if (pret == -1) {
-    return mrb_symbol_value(mrb_intern_lit(mrb, "parser_error"));
-  }
-  else if (pret == -2) {
-    mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "last_len"),
-      mrb_int_value(mrb, RSTRING_LEN(headers_obj)));
+  switch (pret) {
+    case -1: {
+      return mrb_symbol_value(mrb_intern_lit(mrb, "parser_error"));
+    } break;
+    case -2: {
+      mrb_phr->last_len = RSTRING_LEN(headers_obj);
+      return mrb_symbol_value(mrb_intern_lit(mrb, "incomplete"));
+    } break;
+    default: {
+      mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@headers"), mrb_phr_headers_to_a(mrb, headers_obj, headers, num_headers));
 
-    return mrb_symbol_value(mrb_intern_lit(mrb, "incomplete"));
-  } else {
-    mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@headers"), mrb_phr_headers_to_a(mrb, headers_obj, headers, num_headers));
-
-    return mrb_int_value(mrb, pret);
+      return mrb_fixnum_value(pret);
+    }
   }
 }
 
@@ -155,35 +151,37 @@ mrb_phr_decode_chunked(mrb_state *mrb, mrb_value self)
 
   mrb_get_args(mrb, "S", &buf);
   mrb_str_modify(mrb, RSTRING(buf));
+  mrb_phr_t *mrb_phr = DATA_PTR(self);
 
   size_t rsize = RSTRING_LEN(buf);
-  int pret = phr_decode_chunked((phr_chunked_decoder_t *) DATA_PTR(self), RSTRING_PTR(buf), &rsize);
+  int pret = phr_decode_chunked(&mrb_phr->decoder, RSTRING_PTR(buf), &rsize);
 
-  if (pret == -1) {
-    return mrb_symbol_value(mrb_intern_lit(mrb, "parser_error"));
-  }
-  else if (pret == -2) {
-    mrb_str_resize(mrb, buf, rsize);
-
-    return mrb_symbol_value(mrb_intern_lit(mrb, "incomplete"));
-  }
-  else {
-    mrb_str_resize(mrb, buf, rsize);
-
-    return mrb_int_value(mrb, pret);
+  switch (pret) {
+    case -1: {
+      return mrb_symbol_value(mrb_intern_lit(mrb, "parser_error"));
+    } break;
+    case -2: {
+      return mrb_symbol_value(mrb_intern_lit(mrb, "incomplete"));
+    } break;
+    default: {
+      mrb_str_resize(mrb, buf, rsize+pret);
+      return mrb_fixnum_value(rsize);
+    }
   }
 }
 
 static mrb_value
 mrb_consume_trailer(mrb_state *mrb, mrb_value self)
 {
-  return mrb_bool_value(((phr_chunked_decoder_t *) DATA_PTR(self))->consume_trailer);
+  mrb_phr_t *mrb_phr = DATA_PTR(self);
+  return mrb_bool_value(mrb_phr->decoder.consume_trailer);
 }
 
 static mrb_value
 mrb_set_consume_trailer(mrb_state *mrb, mrb_value self)
 {
-  mrb_get_args(mrb, "b", &((phr_chunked_decoder_t *) DATA_PTR(self))->consume_trailer);
+  mrb_phr_t *mrb_phr = DATA_PTR(self);
+  mrb_get_args(mrb, "b", &mrb_phr->decoder.consume_trailer);
 
   return self;
 }
@@ -197,8 +195,7 @@ mrb_phr_reset(mrb_state *mrb, mrb_value self)
   mrb_iv_remove(mrb, self, mrb_intern_lit(mrb, "@status"));
   mrb_iv_remove(mrb, self, mrb_intern_lit(mrb, "@msg"));
   mrb_iv_remove(mrb, self, mrb_intern_lit(mrb, "@headers"));
-  mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "last_len"), mrb_int_value(mrb, 0));
-  memset(DATA_PTR(self), 0, sizeof(phr_chunked_decoder_t));
+  memset(DATA_PTR(self), 0, sizeof(mrb_phr_t));
 
   return self;
 }
