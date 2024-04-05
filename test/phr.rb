@@ -6,7 +6,7 @@ assert("Phr#parse_request") do
   assert_equal('POST', phr.method)
   assert_equal('/', phr.path)
   assert_equal(1, phr.minor_version)
-  assert_equal([["host", "www.google.com"], ["content-length", "5"], ["connection", "close"]], phr.headers)
+  assert_equal([["Host", "www.google.com"], ["Content-Length", "5"], ["Connection", "close"]], phr.headers)
   assert_equal('hallo', buffer[offset..-1])
 end
 
@@ -18,7 +18,7 @@ assert("Phr#parse_response") do
   assert_equal(1, phr.minor_version)
   assert_equal(200, phr.status)
   assert_equal('OK', phr.msg)
-  assert_equal([["content-length", "5"], ["connection", "close"]], phr.headers)
+  assert_equal([["Content-Length", "5"], ["Connection", "close"]], phr.headers)
   assert_equal('hallo', buffer[offset..-1])
 end
 
