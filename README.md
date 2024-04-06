@@ -1,8 +1,7 @@
 # mruby-phr
 A small http parser for mruby based on https://github.com/h2o/picohttpparser
 
-[![Build Status](https://travis-ci.org/Asmod4n/mruby-phr.svg)](https://travis-ci.org/Asmod4n/mruby-phr)
-Example
+Examples
 =======
 ```ruby
 buffer = "HTTP/1.1 200 OK\r\nContent-Length: 5\r\nConnection: close\r\n\r\nhallo"
@@ -32,3 +31,10 @@ phr.decode_chunked(buffer)
 puts buffer
 phr.reset
 ```
+
+Return values
+-------------
+Phr has three response values
+:parser_error when a request was malformed
+:incomplete when the supplied buffer doesnt hold a complete request
+Or a Integer value describing where the body starts.
