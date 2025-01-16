@@ -18,7 +18,7 @@ mrb_phr_init(mrb_state *mrb, mrb_value self)
   return self;
 }
 
-MRB_INLINE mrb_value
+static mrb_value
 mrb_phr_headers_to_a(mrb_state *mrb, mrb_value buff_obj, struct phr_header *headers, size_t num_headers)
 {
   mrb_value headers_array = mrb_ary_new_capa(mrb, num_headers);
@@ -60,17 +60,17 @@ mrb_phr_parse_request(mrb_state *mrb, mrb_value self)
 
   switch(pret) {
     case -1: {
-      return mrb_symbol_value(mrb_intern_lit(mrb, "parser_error"));
+      return mrb_symbol_value(MRB_SYM(parser_error));
     } break;
     case -2: {
       mrb_phr->last_len = RSTRING_LEN(request_obj);
-      return mrb_symbol_value(mrb_intern_lit(mrb, "incomplete"));
+      return mrb_symbol_value(MRB_SYM(incomplete));
     } break;
     default: {
-      mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@method"), mrb_str_substr(mrb, request_obj, method - RSTRING_PTR(request_obj), method_len));
-      mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@path"), mrb_str_substr(mrb, request_obj, path - RSTRING_PTR(request_obj), path_len));
-      mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@minor_version"), mrb_fixnum_value(minor_version));
-      mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@headers"), mrb_phr_headers_to_a(mrb, request_obj, headers, num_headers));
+      mrb_iv_set(mrb, self, MRB_IVSYM(method), mrb_str_substr(mrb, request_obj, method - RSTRING_PTR(request_obj), method_len));
+      mrb_iv_set(mrb, self, MRB_IVSYM(path), mrb_str_substr(mrb, request_obj, path - RSTRING_PTR(request_obj), path_len));
+      mrb_iv_set(mrb, self, MRB_IVSYM(minor_version), mrb_fixnum_value(minor_version));
+      mrb_iv_set(mrb, self, MRB_IVSYM(headers), mrb_phr_headers_to_a(mrb, request_obj, headers, num_headers));
 
       return mrb_int_value(mrb, pret);
     }
@@ -97,17 +97,17 @@ mrb_phr_parse_response(mrb_state *mrb, mrb_value self)
 
   switch (pret) {
     case -1: {
-      return mrb_symbol_value(mrb_intern_lit(mrb, "parser_error"));
+      return mrb_symbol_value(MRB_SYM(parser_error));
     } break;
     case -2: {
       mrb_phr->last_len = RSTRING_LEN(response_obj);
-      return mrb_symbol_value(mrb_intern_lit(mrb, "incomplete"));
+      return mrb_symbol_value(MRB_SYM(incomplete));
     } break;
     default: {
-      mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@minor_version"), mrb_fixnum_value(minor_version));
-      mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@status"), mrb_fixnum_value(status));
-      mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@msg"), mrb_str_substr(mrb, response_obj, msg - RSTRING_PTR(response_obj), msg_len));
-      mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@headers"), mrb_phr_headers_to_a(mrb, response_obj, headers, num_headers));
+      mrb_iv_set(mrb, self, MRB_IVSYM(minor_version), mrb_fixnum_value(minor_version));
+      mrb_iv_set(mrb, self, MRB_IVSYM(status), mrb_fixnum_value(status));
+      mrb_iv_set(mrb, self, MRB_IVSYM(msg), mrb_str_substr(mrb, response_obj, msg - RSTRING_PTR(response_obj), msg_len));
+      mrb_iv_set(mrb, self, MRB_IVSYM(headers), mrb_phr_headers_to_a(mrb, response_obj, headers, num_headers));
 
       return mrb_fixnum_value(pret);
     }
@@ -130,14 +130,14 @@ mrb_phr_parse_headers(mrb_state *mrb, mrb_value self)
 
   switch (pret) {
     case -1: {
-      return mrb_symbol_value(mrb_intern_lit(mrb, "parser_error"));
+      return mrb_symbol_value(MRB_SYM(parser_error));
     } break;
     case -2: {
       mrb_phr->last_len = RSTRING_LEN(headers_obj);
-      return mrb_symbol_value(mrb_intern_lit(mrb, "incomplete"));
+      return mrb_symbol_value(MRB_SYM(incomplete));
     } break;
     default: {
-      mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@headers"), mrb_phr_headers_to_a(mrb, headers_obj, headers, num_headers));
+      mrb_iv_set(mrb, self, MRB_IVSYM(headers), mrb_phr_headers_to_a(mrb, headers_obj, headers, num_headers));
 
       return mrb_fixnum_value(pret);
     }
@@ -158,10 +158,10 @@ mrb_phr_decode_chunked(mrb_state *mrb, mrb_value self)
 
   switch (pret) {
     case -1: {
-      return mrb_symbol_value(mrb_intern_lit(mrb, "parser_error"));
+      return mrb_symbol_value(MRB_SYM(parser_error));
     } break;
     case -2: {
-      return mrb_symbol_value(mrb_intern_lit(mrb, "incomplete"));
+      return mrb_symbol_value(MRB_SYM(incomplete));
     } break;
     default: {
       mrb_str_resize(mrb, buf, rsize+pret);
@@ -189,12 +189,12 @@ mrb_set_consume_trailer(mrb_state *mrb, mrb_value self)
 static mrb_value
 mrb_phr_reset(mrb_state *mrb, mrb_value self)
 {
-  mrb_iv_remove(mrb, self, mrb_intern_lit(mrb, "@method"));
-  mrb_iv_remove(mrb, self, mrb_intern_lit(mrb, "@path"));
-  mrb_iv_remove(mrb, self, mrb_intern_lit(mrb, "@minor_version"));
-  mrb_iv_remove(mrb, self, mrb_intern_lit(mrb, "@status"));
-  mrb_iv_remove(mrb, self, mrb_intern_lit(mrb, "@msg"));
-  mrb_iv_remove(mrb, self, mrb_intern_lit(mrb, "@headers"));
+  mrb_iv_remove(mrb, self, MRB_IVSYM(method));
+  mrb_iv_remove(mrb, self, MRB_IVSYM(path));
+  mrb_iv_remove(mrb, self, MRB_IVSYM(minor_version));
+  mrb_iv_remove(mrb, self, MRB_IVSYM(status));
+  mrb_iv_remove(mrb, self, MRB_IVSYM(msg));
+  mrb_iv_remove(mrb, self, MRB_IVSYM(headers));
   memset(DATA_PTR(self), 0, sizeof(mrb_phr_t));
 
   return self;
@@ -203,16 +203,16 @@ mrb_phr_reset(mrb_state *mrb, mrb_value self)
 void
 mrb_mruby_phr_gem_init(mrb_state* mrb)
 {
-  struct RClass *phr_class = mrb_define_class(mrb, "Phr", mrb->object_class);
+  struct RClass *phr_class = mrb_define_class_id(mrb, MRB_SYM(Phr), mrb->object_class);
   MRB_SET_INSTANCE_TT(phr_class, MRB_TT_DATA);
-  mrb_define_method(mrb, phr_class, "initialize",       mrb_phr_init,             MRB_ARGS_NONE());
-  mrb_define_method(mrb, phr_class, "parse_request",    mrb_phr_parse_request,    MRB_ARGS_REQ(1));
-  mrb_define_method(mrb, phr_class, "parse_response",   mrb_phr_parse_response,   MRB_ARGS_REQ(1));
-  mrb_define_method(mrb, phr_class, "parse_headers",    mrb_phr_parse_headers,    MRB_ARGS_REQ(1));
-  mrb_define_method(mrb, phr_class, "decode_chunked",   mrb_phr_decode_chunked,   MRB_ARGS_REQ(1));
-  mrb_define_method(mrb, phr_class, "consume_trailer?", mrb_consume_trailer,      MRB_ARGS_NONE());
-  mrb_define_method(mrb, phr_class, "consume_trailer=", mrb_set_consume_trailer,  MRB_ARGS_REQ(1));
-  mrb_define_method(mrb, phr_class, "reset",            mrb_phr_reset,            MRB_ARGS_NONE());
+  mrb_define_method_id(mrb, phr_class, MRB_SYM(initialize),       mrb_phr_init,             MRB_ARGS_NONE());
+  mrb_define_method_id(mrb, phr_class, MRB_SYM(parse_request),    mrb_phr_parse_request,    MRB_ARGS_REQ(1));
+  mrb_define_method_id(mrb, phr_class, MRB_SYM(parse_response),   mrb_phr_parse_response,   MRB_ARGS_REQ(1));
+  mrb_define_method_id(mrb, phr_class, MRB_SYM(parse_headers),    mrb_phr_parse_headers,    MRB_ARGS_REQ(1));
+  mrb_define_method_id(mrb, phr_class, MRB_SYM(decode_chunked),   mrb_phr_decode_chunked,   MRB_ARGS_REQ(1));
+  mrb_define_method_id(mrb, phr_class, MRB_SYM_Q(consume_trailer), mrb_consume_trailer,      MRB_ARGS_NONE());
+  mrb_define_method_id(mrb, phr_class, MRB_SYM_E(consume_trailer), mrb_set_consume_trailer,  MRB_ARGS_REQ(1));
+  mrb_define_method_id(mrb, phr_class, MRB_SYM(reset),            mrb_phr_reset,            MRB_ARGS_NONE());
 }
 
 void mrb_mruby_phr_gem_final(mrb_state* mrb) {}

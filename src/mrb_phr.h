@@ -10,6 +10,7 @@
 #include <mruby/array.h>
 #include <mruby/string.h>
 #include <mruby/class.h>
+#include <mruby/presym.h>
 
 #define PHR_MAX_HEADERS 255U
 
