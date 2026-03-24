@@ -22,13 +22,16 @@ static mrb_value
 mrb_phr_headers_to_a(mrb_state *mrb, mrb_value buff_obj, struct phr_header *headers, size_t num_headers)
 {
   mrb_value headers_array = mrb_ary_new_capa(mrb, num_headers);
+  mrb_gc_protect(mrb, headers_array);
   int ai = mrb_gc_arena_save(mrb);
   for (size_t curr_header = 0; curr_header < num_headers; curr_header++) {
     mrb_value header_name = mrb_nil_value();
     if (likely(headers[curr_header].name)) {
       header_name = mrb_str_substr(mrb, buff_obj, headers[curr_header].name - RSTRING_PTR(buff_obj), headers[curr_header].name_len);
+      mrb_gc_protect(mrb, header_name);
     }
     mrb_value header_value = mrb_str_substr(mrb, buff_obj, headers[curr_header].value - RSTRING_PTR(buff_obj), headers[curr_header].value_len);
+    mrb_gc_protect(mrb, header_value);
 
     mrb_ary_push(mrb, headers_array, mrb_assoc_new(mrb, header_name, header_value));
     mrb_gc_arena_restore(mrb, ai);
