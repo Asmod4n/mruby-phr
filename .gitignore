@@ -35,3 +35,8 @@ build/
 build_config.rb.lock
 .cache
 compile_commands.json
+
+# Copied at build time by mrbgem.rake out of deps/picohttpparser (see
+# its comment there) so dependent gems can #include <picohttpparser.h> -
+# build output, not tracked source.
+/include/picohttpparser.h
