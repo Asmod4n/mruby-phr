@@ -1,23 +1,36 @@
-MRUBY_CONFIG=File.expand_path(ENV["MRUBY_CONFIG"] || "build_config.rb")
+require 'rake'
+require 'fileutils'
+
+MRUBY_CONFIG_PATH = File.expand_path(ENV["MRUBY_CONFIG"] || "build_config.rb")
 
 file :mruby do
-  sh "git clone --recurse-submodules --depth=1 https://github.com/mruby/mruby.git"
-  sh "git submodule update --init --recursive"
+  unless File.directory?('mruby')
+    sh "git clone --depth=1 https://github.com/mruby/mruby.git"
+  end
 end
 
 desc "compile binary"
 task :compile => :mruby do
-  sh "cd mruby && MRUBY_CONFIG=#{MRUBY_CONFIG} rake all"
+  Dir.chdir("mruby") do
+    ENV["MRUBY_CONFIG"] = MRUBY_CONFIG_PATH
+    sh "rake all"
+  end
 end
 
 desc "test"
 task :test => :mruby do
-  sh "cd mruby && MRUBY_CONFIG=#{MRUBY_CONFIG} rake all test"
+  Dir.chdir("mruby") do
+    ENV["MRUBY_CONFIG"] = MRUBY_CONFIG_PATH
+    sh "rake all test"
+  end
 end
 
 desc "cleanup"
 task :clean do
-  sh "cd mruby && rake deep_clean"
+  Dir.chdir("mruby") do
+    ENV["MRUBY_CONFIG"] = MRUBY_CONFIG_PATH
+    sh "rake deep_clean"
+  end
 end
 
 task :default => :test
