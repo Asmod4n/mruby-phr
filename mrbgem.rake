@@ -14,8 +14,23 @@
   # with phr_parse_request directly in its own C++ instead of going
   # through the Ruby Phr object. Build output, not tracked source -
   # see .gitignore.
+  #
+  # Copied only when the bytes differ. FileUtils.cp writes the file on
+  # every `rake compile` and gives it a new mtime, so every dependent
+  # gem that includes it recompiled on every single run, on a tree
+  # where nothing had changed. Measured in webmachine-mruby: three
+  # objects per idle build.
+  #
+  # The comparison is on CONTENT, not on mtime: a picohttpparser
+  # update writes the new bytes and the rebuild follows, which is what
+  # has to keep working. FileUtils.identical? reads both files, so a
+  # changed header is never mistaken for an unchanged one.
   FileUtils.mkdir_p "#{spec.dir}/include"
-  FileUtils.cp "#{picohttpparser_src}/picohttpparser.h", "#{spec.dir}/include/"
+  phr_header = "#{spec.dir}/include/picohttpparser.h"
+  phr_header_src = "#{picohttpparser_src}/picohttpparser.h"
+  unless File.exist?(phr_header) && FileUtils.identical?(phr_header_src, phr_header)
+    FileUtils.cp phr_header_src, phr_header
+  end
 
   spec.objs += %W(
     #{picohttpparser_src}/picohttpparser.c
